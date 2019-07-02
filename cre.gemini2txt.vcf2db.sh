@@ -4,7 +4,7 @@
 #  when using v.chr = g.chr AND v.gene = g.gene it becomes very slow
 #  by default bcbio writes PASS only variants to the database
 
-#  example call: cre.gemini2txt.sh S28-ensemble.db 5 ALL
+#  example call: cre.gemini2txt.sh S28-ensemble.db 5 ALL 0.01
 #  when using vcfanno/vcfdb loader some fields are different
 #  for some reason \n in the query string does not work here
 
@@ -38,7 +38,7 @@ sQuery="select \
         dp as Depth,\
         qual as Quality,\
         gene as Gene,\
-        clinvar_sig as Clinvar,\
+        clinvar_pathogenic as Clinvar,\
         ensembl_gene_id as Ensembl_gene_id,\
         transcript as Ensembl_transcript_id,\
         aa_length as AA_position,\
@@ -92,6 +92,19 @@ sQuery=$sQuery"hgvsc as Nucleotide_change_ensembl,\
         where \
 	        (dp >= "$depth_threshold" or dp = '' or dp is null) "$severity_filter" and gnomad_af_popmax <= "$max_af
 
-#echo $sQuery
-
-gemini query --header -q "$sQuery" $file
+s_gt_filter=''
+if [ -n "$denovo" ] && [ "$denovo" == 1 ]
+then
+    # https://www.biostars.org/p/359117/
+    proband=`gemini query -q "select name from samples where phenotype=2" $file`
+    mom=`gemini query -q "select name from samples where phenotype=1 and sex=2" $file`
+    dad=`gemini query -q "select name from samples where phenotype=1 and sex=1" $file`
+    
+    s_gt_filter="gt_types."$proband" == HET and gt_types."$dad" == HOM_REF and gt_types."$mom" == HOM_REF"
+    #(gt_types."$proband" == HOM_ALT and gt_types."$dad" == HOM_REF and gt_types."$mom" == HET)"
+    # otherwise a lot of trash variants
+    sQuery=$sQuery" and qual>=500"
+    gemini query -q "$sQuery" --gt-filter "$s_gt_filter" --header $file
+else
+    gemini query --header -q "$sQuery" $file
+fi
