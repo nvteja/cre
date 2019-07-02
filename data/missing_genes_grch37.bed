@@ -7,7 +7,7 @@ chr	start	end	gene
 0	0	0	RNR1 — many loci
 0	0	0	ATXN8 — not available
 0	0	0	H19-ICR — not available
-0	0	0	WHCR  - not available
+0 0 0	WHCR  - not available
 14	106032614	107288051	IGH
 1	231950372	231954263	DISC2
 18	43664110	43684300	ATP5F1A
